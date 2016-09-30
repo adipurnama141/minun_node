@@ -45,6 +45,11 @@ int main(int argc , char *argv[])
     //Accept and incoming connection
     puts("Waiting for incoming connections...");
     c = sizeof(struct sockaddr_in);
+
+
+    
+
+
      
     //accept connection from an incoming client
     client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
@@ -53,16 +58,22 @@ int main(int argc , char *argv[])
         perror("accept failed");
         return 1;
     }
+    FILE *fd = fdopen(client_sock, "r+");
     puts("Connection accepted");
-    bzero(client_message,2000);
-    strcpy(client_message , "Welcome to munin!\n");
-    write(client_sock, client_message, strlen(client_message));
-    bzero(client_message,2000);
-
-
+    
+ 
     char hostname[1024];
     hostname[1023] = '\0';
     gethostname(hostname, 1023);
+    fprintf(fd, " # munin node at %s\n", hostname);
+    fflush(fd);
+
+
+
+    bzero(client_message,2000);
+
+
+   
     write(client_sock, hostname, strlen(hostname));
 
 
@@ -72,6 +83,8 @@ int main(int argc , char *argv[])
     {
         //Send the message back to client
         write(client_sock , client_message , strlen(client_message));
+
+
     }
      
     if(read_size == 0)
