@@ -40,65 +40,64 @@ int main() {
     } else {
         printf("Bind done.\n");
     }
-	while(1){
-	    //listen
-	    listen(socket_node, 3);
-	    printf("Waiting for incoming connections...\n");
 
-	    //accept connection from an incoming master
-	    sockaddr_size = sizeof(struct sockaddr_in);
-	    socket_master = accept(socket_node, (struct sockaddr*) &master, (socklen_t*) &sockaddr_size);
-	    if(socket_master < 0) {
-	        printf("Accept failed.\n");
-	        return 1;
-	    } else {
-	        printf("Connection accepted.\n");
-	    }
-	    fd = fdopen(socket_master, "r+");
-	    fprintf(fd, "# munin at %s\n", hostname);
-	    fflush(fd);
+    //listen
+    listen(socket_node, 3);
+    printf("Waiting for incoming connections...\n");
 
-	    //receive a message from master
-	    while((read_size = recv(socket_master, master_message, 32, 0)) > 0) {
-	        //identify
-	        if(compare(master_message, "cap")) {
-	            fprintf(fd, "cap multigraph dirtyconfig\n");
-	        } else if(compare(master_message, "nodes")) {
-	            fprintf(fd, "%s\n.\n", hostname);
-	        } else if(compare(master_message, listhostname)) {
-	            fprintf(fd, "memory\n");
-	        } else if(compare(master_message, "config memory")) {
-	            fprintf(fd, "graph_args --base 1024 -l 0 --upper-limit 8271892480\n");
-	            fprintf(fd, "graph_vlabel Bytes\n");
-	            fprintf(fd, "graph_title Memory usage\n");
-	            fprintf(fd, "graph_info This graph shows this machine memory.\n");
-	            fprintf(fd, "graph_order used free\n");
-	            fprintf(fd, "used.label used\n");
-	            fprintf(fd, "used.draw STACK\n");
-	            fprintf(fd, "used.info Used memory.\n");
-	            fprintf(fd, "free.label free\n");
-	            fprintf(fd, "free.draw STACK\n");
-	            fprintf(fd, "free.info Free memory.\n.\n");
-	        } else if(compare(master_message, "fetch memory")) {
-	            struct sysinfo si;
-	            sysinfo(&si);
-	            fprintf(fd, "used.value %ld\n", si.bufferram);
-	            fprintf(fd, "free.value %ld\n.\n", si.freeram);
-	        } else if(compare(master_message, "version")) {
-	            fprintf(fd, "lovely node on %s version: 8.48\n", hostname);
-	        } else if(compare(master_message, "quit")) {
-	            break;
-	        } else {
-	            fprintf(fd, "# Unknown command. Try cap, list, nodes, config, fecth, version or quit\n");
-	        }
-	        fflush(fd);
-	        bzero(master_message, 32);
-	    }
-	    if(read_size == -1) {
-	        printf("Recv failed.\n");
-	        return 1;
-	    }
-	}
+    //accept connection from an incoming master
+    sockaddr_size = sizeof(struct sockaddr_in);
+    socket_master = accept(socket_node, (struct sockaddr*) &master, (socklen_t*) &sockaddr_size);
+    if(socket_master < 0) {
+        printf("Accept failed.\n");
+        return 1;
+    } else {
+        printf("Connection accepted.\n");
+    }
+    fd = fdopen(socket_master, "r+");
+    fprintf(fd, "# munin at %s\n", hostname);
+    fflush(fd);
+
+    //receive a message from master
+    while((read_size = recv(socket_master, master_message, 32, 0)) > 0) {
+        //identify
+        if(compare(master_message, "cap")) {
+            fprintf(fd, "cap multigraph dirtyconfig\n");
+        } else if(compare(master_message, "nodes")) {
+            fprintf(fd, "%s\n.\n", hostname);
+        } else if(compare(master_message, listhostname)) {
+            fprintf(fd, "memory\n");
+        } else if(compare(master_message, "config memory")) {
+            fprintf(fd, "graph_args --base 1024 -l 0 --upper-limit 8271892480\n");
+            fprintf(fd, "graph_vlabel Bytes\n");
+            fprintf(fd, "graph_title Memory usage\n");
+            fprintf(fd, "graph_info This graph shows this machine memory.\n");
+            fprintf(fd, "graph_order used free\n");
+            fprintf(fd, "used.label used\n");
+            fprintf(fd, "used.draw STACK\n");
+            fprintf(fd, "used.info Used memory.\n");
+            fprintf(fd, "free.label free\n");
+            fprintf(fd, "free.draw STACK\n");
+            fprintf(fd, "free.info Free memory.\n.\n");
+        } else if(compare(master_message, "fetch memory")) {
+            struct sysinfo si;
+            sysinfo(&si);
+            fprintf(fd, "used.value %ld\n", si.bufferram);
+            fprintf(fd, "free.value %ld\n.\n", si.freeram);
+        } else if(compare(master_message, "version")) {
+            fprintf(fd, "lovely node on %s version: 8.48\n", hostname);
+        } else if(compare(master_message, "quit")) {
+            break;
+        } else {
+            fprintf(fd, "# Unknown command. Try cap, list, nodes, config, fecth, version or quit\n");
+        }
+        fflush(fd);
+        bzero(master_message, 32);
+    }
+    if(read_size == -1) {
+        printf("Recv failed.\n");
+        return 1;
+    }
 
     //finish
     printf("Master disconnected.\n"); //read_size == 0
