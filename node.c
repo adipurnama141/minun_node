@@ -30,7 +30,7 @@ int main() {
     //prepare the sockaddr_in structure
     node.sin_family = AF_INET;
     node.sin_addr.s_addr = INADDR_ANY;
-    node.sin_port = htons(8888);
+    node.sin_port = htons(4949);
 
     //bind
     int retbind = bind(socket_node, (struct sockaddr*) &node, sizeof(node));
@@ -45,6 +45,7 @@ int main() {
     listen(socket_node, 3);
     printf("Waiting for incoming connections...\n");
 
+    while (1) {
     //accept connection from an incoming master
     sockaddr_size = sizeof(struct sockaddr_in);
     socket_master = accept(socket_node, (struct sockaddr*) &master, (socklen_t*) &sockaddr_size);
@@ -53,21 +54,27 @@ int main() {
         return 1;
     } else {
         printf("Connection accepted.\n");
+
     }
     fd = fdopen(socket_master, "r+");
-    fprintf(fd, "# munin at %s\n", hostname);
+    fprintf(fd, "# munin node at %s\n", hostname);
+    printf("# munin node at %s\n", hostname);
     fflush(fd);
 
-    //receive a message from master
+    //receive a message freeom master
     while((read_size = recv(socket_master, master_message, 32, 0)) > 0) {
         //identify
         if(compare(master_message, "cap")) {
+            printf("cap \n");
             fprintf(fd, "cap multigraph dirtyconfig\n");
         } else if(compare(master_message, "nodes")) {
+            printf("nodes \n");
             fprintf(fd, "%s\n.\n", hostname);
         } else if(compare(master_message, listhostname)) {
+            printf("memory \n");
             fprintf(fd, "memory\n");
         } else if(compare(master_message, "config memory")) {
+            printf("config memory");
             fprintf(fd, "graph_args --base 1024 -l 0 --upper-limit 8271892480\n");
             fprintf(fd, "graph_vlabel Bytes\n");
             fprintf(fd, "graph_title Memory usage\n");
@@ -82,9 +89,11 @@ int main() {
         } else if(compare(master_message, "fetch memory")) {
             struct sysinfo si;
             sysinfo(&si);
+            printf("fetch memory \n");
             fprintf(fd, "used.value %ld\n", si.bufferram);
             fprintf(fd, "free.value %ld\n.\n", si.freeram);
         } else if(compare(master_message, "version")) {
+            printf("version");
             fprintf(fd, "lovely node on %s version: 8.48\n", hostname);
         } else if(compare(master_message, "quit")) {
             break;
@@ -93,6 +102,7 @@ int main() {
         }
         fflush(fd);
         bzero(master_message, 32);
+    }
     }
     if(read_size == -1) {
         printf("Recv failed.\n");
@@ -110,7 +120,7 @@ int compare(char* str, char* substr) {
     while(str[i] == substr[i]) {
         i++;
         if(i == n) { //sejauh ini sama
-        	//karakter setelahnya ENTER (0xd telnet, 0xa nc) atau bzero
+            //karakter setelahnya ENTER (0xd telnet, 0xa nc) atau bzero
             if(str[i] == 0xd || str[i] == 0xa || str[i] == 0x0) {
                 return 1;
             } else {
